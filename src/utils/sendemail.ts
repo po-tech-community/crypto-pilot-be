@@ -1,12 +1,7 @@
 import Nodemailer from "nodemailer";
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
-    if (
-      !process.env.MAIL_TRAP_TOKEN
-    ) {
-      throw new Error("Mailtrap SMTP environment variables missing");
-    }
-
+  
     const transporter = Nodemailer.createTransport({
     host: "smtp.ethereal.email",
     port: 587,

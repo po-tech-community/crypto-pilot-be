@@ -1,26 +1,44 @@
 import mongoose, { Schema, Document } from "mongoose";
+export enum ERole {
+  user,
+  admin,
+}
 export interface IUser extends Document {
   userId: string;
   email: string;
   password: string;
-  role: "user" | "admin";
+  role: ERole;
   emailConfirm?: boolean;
-  refreshToken:string;
-  resetPasswordToken:string | undefined;
-  resetPasswordExpire:number | undefined;
-
+  refreshToken?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpire?:Number
 }
 
 const UserSchema: Schema = new Schema(
   {
     userId: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role:{type:String,required: true, default: "user"},
-    emailConfirm:{type:Boolean,required: false, default: false},
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters"],
+    },
+    role: {
+      type: String,
+      enum: Object.values(ERole),
+      default: ERole.user,
+    },
+    emailConfirm: { type: Boolean, required: false, default: false },
     refreshToken: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },
-    resetPasswordExpire: { type: Number,required: false },
+    resetPasswordExpire: { type: Number, required: false },
   },
   { timestamps: true }
 );
