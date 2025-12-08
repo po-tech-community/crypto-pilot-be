@@ -5,6 +5,9 @@ import accountRoutes from "./modules/account/account.routes";
 import authRoutes from "./modules/authentication/auth.routes"
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import countryRoutes from "./modules/country/country.routes";
+import profileRoutes from "./modules/profile/profile.routes";
+
 
 const app = express();
 
@@ -15,6 +18,8 @@ app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 // Routes
 app.use("/api/accounts", accountRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/countries", countryRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Health check
 app.get("/", (req: Request, res: Response) =>

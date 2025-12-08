@@ -31,10 +31,12 @@ export function AuthMiddleware(
   }
 }
 
-export function Authorize(role: ERole){
-   return (req: AuthRequest, res: Response, next: NextFunction)=>{
-      if(req.user?.role!=role){
-        return res.status(403).json({message: "Access denied"})
-      }
-   }
+export function Authorize(role: ERole) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userRole = ERole[req.user?.role as keyof typeof ERole];
+    if (userRole !== role) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    next();
+  };
 }
