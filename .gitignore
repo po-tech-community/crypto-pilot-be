@@ -156,3 +156,4 @@ tags
 bun.lock
 
 dist/
+.vscode/settings.json
