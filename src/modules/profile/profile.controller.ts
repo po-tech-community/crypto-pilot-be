@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import {
-  DisableProfileRequest,
   ProfileRequest,
   ProfileResponse,
   UpdateProfileRequest,
@@ -41,7 +40,7 @@ export const GetAllProfile = async (
     if (!token) {
       return res.status(403).json({ message: "Unauthorized" });
     }
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded || !decoded.userId) {
       return res
         .status(401)
@@ -68,7 +67,7 @@ export const CreateProfile = async (
     if (!token) {
       return res.status(403).json({ message: "Unauthorized" });
     }
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded || !decoded.userId) {
       return res
         .status(401)
@@ -89,9 +88,8 @@ export const CreateProfile = async (
     if (phone && !PHONE_REGREX.test(phone)) {
       return res
         .status(400)
-        .json({ message: "first name or last name cannot be empty" });
+        .json({ message: "Invalid phone number" });
     }
-
     const data = {
       userId: decoded.userId,
       firstName: firstName,
@@ -99,12 +97,13 @@ export const CreateProfile = async (
       avatar: avatar ?? undefined,
       joinDate: new Date(Date.now()),
       phone: phone,
-      countryId: countryId ?? new Types.ObjectId("69365d89d6ebcc3c6f4affa9"),
+      countryId: (countryId === null || countryId?.toString() === "") ? new Types.ObjectId("69365d89d6ebcc3c6f4affa9") : countryId,
     };
     const addNew = await AddProfile(data);
 
     res.status(200).json({ data: addNew, message: "Created" });
   } catch (err) {
+    console.error(err)
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -118,15 +117,16 @@ export const GetProfile = async (
     if (!token) {
       return res.status(403).json({ message: "Unauthorized" });
     }
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded || !decoded.userId) {
       return res
         .status(401)
         .json({ message: "Unauthorized: Invalid or expired token." });
     }
 
+
     const profile = await FindProfile(
-      { userId: decoded.userId, isActive: true },
+      { userId: decoded.userId},
       popOptions
     );
     if (!profile) {
@@ -147,17 +147,17 @@ export const UpdateProfile = async (
     if (!token) {
       return res.status(403).json({ message: "Unauthorized" });
     }
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded || !decoded.userId) {
       return res
         .status(401)
         .json({ message: "Unauthorized: Invalid or expired token." });
     }
-    const active = await FindProfile({
-      userId: decoded.userId,
-      isActive: true,
+  
+    const profile_ = await FindProfile({
+      userId: decoded.userId
     });
-    if (!active) {
+    if (!profile_) {
       return res.status(404).json({ message: "Not Found" });
     }
 
@@ -185,7 +185,7 @@ export const UpdateProfile = async (
     await UpdatedProfile(decoded.userId, data);
 
     const profile = await FindProfile(
-      { userId: decoded.userId, isActive: true },
+      { userId: decoded.userId},
       popOptions
     );
 
@@ -196,31 +196,4 @@ export const UpdateProfile = async (
   }
 };
 
-//TODO: Fix it if profile is disabled, user can or cannot login
-export const DisableProfile = async (
-  req: Request<{}, {}, DisableProfileRequest>,
-  res: Response<{}, ProfileResponse>
-) => {
-  try {
-    const token = req.cookies.access_token;
-    if (!token) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: Invalid or expired token." });
-    }
 
-    const updatedProfile = await UpdatedProfile(decoded.userId, req.body);
-
-    if (!updatedProfile) {
-      return res.status(404).json({ message: "Not Found" });
-    }
-
-    res.status(204).send();
-  } catch (err) {
-    return res.status(500).json({ message: "Server Error" });
-  }
-};

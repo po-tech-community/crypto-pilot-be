@@ -9,6 +9,7 @@ import {
   ForgotResponse,
   ResetRequest,
   ResetResponse,
+  DisableUserRequest,
 } from "./auth.types";
 import {
   hashedString,
@@ -20,12 +21,13 @@ import {
   verifyHashedString,
   verifyRefreshToken,
   verifyResetToken,
+  verifyToken,
 } from "./auth.utils";
 import { v4 as uuidv4 } from "uuid";
-import crypto from "crypto";
 import { sendEmail } from "../../utils/sendemail";
 import jwt from "jsonwebtoken";
 import { FindAccount, RegisterAccount, UpdateAccount } from "./auth.service";
+import { ERole } from "./auth.models";
 
 export const SignUp = async (
   req: Request<RegisterRequest>,
@@ -85,11 +87,11 @@ export const SignIn = async (
   try {
     const user = await FindAccount({ email: email });
     if (!user) {
-      return res.status(400).json({ message: "Not Found" });
+      return res.status(404).json({ message: "Not Found" });
     }
     const match = await verifyHashedString(user.password, password);
     if (!match) {
-      return res.status(400).json({ message: "Not Found" });
+      return res.status(404).json({ message: "Not Found" });
     }
     const token = signToken({
       userId: user.userId,
@@ -132,7 +134,7 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "No refresh token" });
   }
   try {
-    const decoded: any = verifyRefreshToken(refresh_token);
+    const decoded: any = await verifyRefreshToken(refresh_token);
 
     const user = await FindAccount({ userId: decoded.userId });
     if (user) {
@@ -141,7 +143,7 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
         refresh_token
       );
       if (!userRefreshToken) {
-        return res.status(403).json({ message: "Invalid refresh token" });
+        return res.status(401).json({ message: "Unauthorized" });
       }
 
       const newAccessToken = signToken({
@@ -158,9 +160,7 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
 
       res.status(200).json({ message: "Access token refreshed" });
     } else {
-      return res
-        .status(400)
-        .json({ message: "Invalid access token refreshed" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
   } catch (err) {
     console.log(err);
@@ -212,7 +212,7 @@ export const ResetPassword = async (
   }
 
   try {
-    const decoded = verifyResetToken(token);
+    const decoded = await verifyResetToken(token);
 
     const user = await FindAccount({ userId: decoded.userId });
 
@@ -259,9 +259,9 @@ export const Profile = async (req: AuthRequest, res: Response) => {
 
 export const Logout = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.refresh_token;
+    const token = req.cookies.access_token;
     if (token) {
-      const decoded: any = jwt.decode(token);
+      const decoded: any = await verifyToken(token);
       if (decoded?.userId) {
         await UpdateAccount(decoded.userId, { refreshToken: undefined });
       }
@@ -275,3 +275,50 @@ export const Logout = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+export const DisabledProfile = async (
+  req: Request<{}, {}, DisableUserRequest>,
+  res: Response
+) => {
+  try {
+    const token = req.cookies.access_token;
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const decoded = await verifyToken(token);
+    if (!decoded || !decoded.userId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Invalid or expired token." });
+    }
+    const userRole = decoded.role as ERole;
+    if(userRole === ERole.admin){
+      const user_ = await FindAccount({
+        userId: req.body.userId
+      });
+      if (!user_) {
+        return res.status(404).json({ message: "Not Found" });
+      }
+      await UpdateAccount(req.body.userId!,{updatedBy: userRole ,isActive: false});
+      
+    }
+    else{
+      const user_ = await FindAccount({
+        userId: decoded.userId
+      });
+      if (!user_) {
+        return res.status(404).json({ message: "Not Found" });
+      }
+      await UpdateAccount(decoded.userId,{updatedBy: decoded.userId ,isActive: false});
+    }
+    
+    res.status(204).send();
+    
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+

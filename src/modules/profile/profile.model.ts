@@ -8,7 +8,6 @@ export interface IProfile extends Document {
   joinDate: Date;
   phone?: string;
   countryId?: Types.ObjectId;
-  isActive: boolean;
 }
 
 const ProfileSchema: Schema = new Schema(
@@ -28,7 +27,6 @@ const ProfileSchema: Schema = new Schema(
       required: false,
       defaut: new Types.ObjectId("69365d89d6ebcc3c6f4affa9"),
     },
-    isActive: { type: Boolean, require: true, default: true },
   },
   { timestamps: true }
 );
