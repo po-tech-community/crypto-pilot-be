@@ -1,10 +1,8 @@
 import { PopulateOptions } from "mongoose";
 import Profile, { IProfile } from "./profile.model";
 import {
-  DisableProfileRequest,
   ProfileRequest,
   ProfileResponse,
-  toResponseProfile,
   UpdateProfileRequest,
 } from "./profile.types";
 
@@ -14,6 +12,7 @@ export const AddProfile = async (data: ProfileRequest): Promise<IProfile> => {
     await newProfile.save();
     return newProfile;
   } catch (err) {
+    console.error(err)
     throw new Error("Failed to create user");
   }
 };
@@ -36,7 +35,7 @@ export const FindProfile = async (
 
 export const UpdatedProfile = async (
   userId: string,
-  data: UpdateProfileRequest | DisableProfileRequest
+  data: UpdateProfileRequest
 ): Promise<ProfileResponse | null> => {
   const updated = await Profile.findOneAndUpdate({ userId: userId }, data, {
     new: true,

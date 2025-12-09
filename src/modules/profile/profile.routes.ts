@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   CreateProfile,
-  DisableProfile,
   GetAllProfile,
   GetProfile,
   UpdateProfile,
@@ -15,6 +14,5 @@ router.get("/", AuthMiddleware, Authorize(ERole.admin), GetAllProfile);
 router.post("/create", AuthMiddleware, CreateProfile);
 router.get("/getme", AuthMiddleware, GetProfile);
 router.put("/update", AuthMiddleware, UpdateProfile);
-router.put("/delete", AuthMiddleware, DisableProfile);
 
 export default router;

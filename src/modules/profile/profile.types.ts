@@ -1,4 +1,3 @@
-import { Request } from "express";
 import mongoose from "mongoose";
 import { IProfile } from "./profile.model";
 
@@ -20,9 +19,6 @@ export interface UpdateProfileRequest {
   countryId?: mongoose.Types.ObjectId;
 }
 
-export interface DisableProfileRequest {
-  isActive: boolean;
-}
 
 export interface ProfileResponse {
   userId: string;
