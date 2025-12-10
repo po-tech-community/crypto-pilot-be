@@ -6,7 +6,7 @@ import {
 
 export const FindAccount = async (fields: Record<string, any>): Promise<IUser | null> => {
   try {
-    const user = await User.findOne(fields);
+    const user = await User.findOne({...fields,isActive:true});
     return user
   }
   catch (err) {

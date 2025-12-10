@@ -154,5 +154,10 @@ tags
 
 # End of https://www.gitignore.io/api/node,vim,git,macos,linux,sublimetext
 bun.lock
+.vscode/settings.json
+
+bun.lock
 
 dist/
+.vscode/settings.json
+.vscode/settings.json

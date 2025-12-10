@@ -5,7 +5,7 @@ import { ERole } from "./auth.models";
 import { FindAccount } from "./auth.service";
 
 
-export function AuthMiddleware(
+export async function  AuthMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -19,10 +19,10 @@ export function AuthMiddleware(
   const token = header.split(" ")[1]
 
   try {
-    const decoded = verifyToken(token)
-    const user = FindAccount({userId: decoded.userId})
+    const decoded = await verifyToken(token)
+    const user = await FindAccount({userId: decoded.userId})
     if(!user){
-      return res.status(401).json({ message: "Invalid token" })
+      return res.status(404).json({ message: "Not Found" })
     }
     req.user = decoded;
     next()
@@ -31,10 +31,12 @@ export function AuthMiddleware(
   }
 }
 
-export function Authorize(role: ERole){
-   return (req: AuthRequest, res: Response, next: NextFunction)=>{
-      if(req.user?.role!=role){
-        return res.status(403).json({message: "Access denied"})
-      }
-   }
+export function Authorize(role: ERole) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userRole = ERole[req.user?.role as keyof typeof ERole];
+    if (userRole !== role) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    next();
+  };
 }

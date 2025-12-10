@@ -57,3 +57,9 @@ export interface ResetResponse {
 export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
+
+export interface DisableUserRequest {
+  userId?: string
+  isActive: boolean;
+  updatedBy?:string
+}

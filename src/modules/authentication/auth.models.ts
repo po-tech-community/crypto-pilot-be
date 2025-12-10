@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 export enum ERole {
-  user,
-  admin,
+  user = "user",
+  admin = "admin",
 }
 export interface IUser extends Document {
   userId: string;
@@ -10,8 +10,8 @@ export interface IUser extends Document {
   role: ERole;
   emailConfirm?: boolean;
   refreshToken?: string;
-  resetPasswordToken?: string;
-  resetPasswordExpire?:Number
+  isActive?:boolean;
+  updatedBy?:string;
 }
 
 const UserSchema: Schema = new Schema(
@@ -37,8 +37,8 @@ const UserSchema: Schema = new Schema(
     },
     emailConfirm: { type: Boolean, required: false, default: false },
     refreshToken: { type: String, required: false },
-    resetPasswordToken: { type: String, required: false },
-    resetPasswordExpire: { type: Number, required: false },
+    isActive:{type: Boolean, require: false, default: true},
+    updatedBy:{type: String, required: false}
   },
   { timestamps: true }
 );

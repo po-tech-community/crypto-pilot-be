@@ -45,6 +45,17 @@ export function verifyRefreshToken(token: string):JwtPayload {
   return jwt.verify(token, process.env.JWT_REFRESH_KEY!) as JwtPayload;
 }
 
+export function resetToken(payload: JwtPayload):string
+{
+  return jwt.sign(payload,process.env.RESET_PASSWORD_SECRET!,{ expiresIn: "5m" });
+  
+}
+
+export function verifyResetToken(token: string): JwtPayload
+{
+  return jwt.verify(token,process.env.RESET_PASSWORD_SECRET!) as JwtPayload;
+  
+}
 export const htmlTemplate = (resetLink:string)=>{
     const html = `
         <h2>Password Reset Request</h2>
