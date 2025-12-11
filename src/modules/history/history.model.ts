@@ -1,17 +1,28 @@
 import { Schema, model, Document, Types } from "mongoose";
 
-// can add stake and unstake if necessary
-export type HistoryType = "BUY" | "SELL" | "DEPOSIT" | "WITHDRAW";
+// 1. Define Enums to serve as the single source of truth
+export enum HistoryType {
+  BUY = "BUY",
+  SELL = "SELL",
+  DEPOSIT = "DEPOSIT",
+  WITHDRAW = "WITHDRAW",
+}
+
+export enum HistoryStatus {
+  FILLED = "FILLED",
+  PARTIALLY_FILLED = "PARTIALLY_FILLED",
+  CANCELLED = "CANCELLED",
+}
 
 export interface HistoryDocument extends Document {
   account: Types.ObjectId;
   type: HistoryType;
-  asset: string; // BTC, XRP ...
+  asset: string;
   amount: number;
-  price?: number | null; // optional
+  price?: number | null;
   createdAt: Date;
   updatedAt: Date;
-  status: string;
+  status: HistoryStatus;
 }
 
 const historySchema = new Schema<HistoryDocument>(
@@ -23,13 +34,14 @@ const historySchema = new Schema<HistoryDocument>(
     },
     type: {
       type: String,
-      enum: ["BUY", "SELL", "DEPOSIT", "WITHDRAW"],
+      enum: Object.values(HistoryType),
       required: true,
     },
     asset: {
       type: String,
       required: true,
       trim: true,
+      uppercase: true,
     },
     amount: {
       type: Number,
@@ -42,8 +54,8 @@ const historySchema = new Schema<HistoryDocument>(
     },
     status: {
       type: String,
-      enum: ["Filled", "Partially Filled", "Cancelled"],
-      default: "Filled",
+      enum: Object.values(HistoryStatus),
+      default: HistoryStatus.FILLED,
     },
   },
   { timestamps: true }

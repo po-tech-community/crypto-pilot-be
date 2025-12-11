@@ -9,7 +9,6 @@ import {
 } from "./history.controller";
 
 const historyRoutes = Router();
-historyRoutes.post("/mock", seedHistoryController);
 
 // get method
 historyRoutes.get("/", getHistoryController);
