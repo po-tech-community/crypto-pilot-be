@@ -12,7 +12,7 @@ export const AddProfile = async (data: ProfileRequest): Promise<IProfile> => {
     await newProfile.save();
     return newProfile;
   } catch (err) {
-    console.error(err)
+    console.error(err);
     throw new Error("Failed to create user");
   }
 };

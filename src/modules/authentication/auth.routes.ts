@@ -1,24 +1,17 @@
 import { Router } from "express";
 import {
-  SignUp,
-  SignIn,
-  Profile,
   ForgotPassword,
   ResetPassword,
   RefreshTokenHandler,
-  Logout,
-  DisabledProfile,
+  LogOut,
+  DisabledUser,
 } from "./auth.controller";
-import { AuthMiddleware } from "./auth.middleware";
 
 const router = Router();
-router.post("/register", SignUp);
-router.post("/login", SignIn);
-router.post("/refresh",AuthMiddleware ,RefreshTokenHandler)
-router.post("/logout",AuthMiddleware ,Logout)
-router.post("/forgot-password",AuthMiddleware, ForgotPassword);
+router.post("/refresh", RefreshTokenHandler);
+router.post("/logout", LogOut);
+router.post("/forgot-password", ForgotPassword);
 router.post("/reset-password", ResetPassword);
-router.get("/me", AuthMiddleware, Profile);
-router.put("/disable", AuthMiddleware, DisabledProfile);
+router.put("/disable", DisabledUser);
 
 export default router;

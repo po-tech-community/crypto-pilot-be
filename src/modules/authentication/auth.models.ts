@@ -10,8 +10,8 @@ export interface IUser extends Document {
   role: ERole;
   emailConfirm?: boolean;
   refreshToken?: string;
-  isActive?:boolean;
-  updatedBy?:string;
+  isActive?: boolean;
+  updatedBy?: string;
 }
 
 const UserSchema: Schema = new Schema(
@@ -37,8 +37,8 @@ const UserSchema: Schema = new Schema(
     },
     emailConfirm: { type: Boolean, required: false, default: false },
     refreshToken: { type: String, required: false },
-    isActive:{type: Boolean, require: false, default: true},
-    updatedBy:{type: String, required: false}
+    isActive: { type: Boolean, require: false, default: true },
+    updatedBy: { type: String, required: false },
   },
   { timestamps: true }
 );

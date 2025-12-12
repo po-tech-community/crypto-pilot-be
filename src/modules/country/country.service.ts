@@ -1,11 +1,10 @@
 import Country, {
   CountryResponse,
   CreateCountryBody,
-  ICountry,
   toResponseCountry,
 } from "./country.model";
 
-export const GetAllCountries = async (): Promise<CountryResponse[]> => {
+export const getAll = async (): Promise<CountryResponse[]> => {
   try {
     const countries = await Country.find({});
     return countries.map(toResponseCountry);
@@ -14,7 +13,9 @@ export const GetAllCountries = async (): Promise<CountryResponse[]> => {
   }
 };
 
-export const CreateCountry = async (data: CreateCountryBody): Promise<CountryResponse> => {
+export const create = async (
+  data: CreateCountryBody
+): Promise<CountryResponse> => {
   try {
     const country = new Country(data);
     const saved = await country.save();
@@ -24,12 +25,16 @@ export const CreateCountry = async (data: CreateCountryBody): Promise<CountryRes
   }
 };
 
-export const CreateManyCountries = async (data: CreateCountryBody[]): Promise<CountryResponse[]> => {
+export const createMany = async (
+  data: CreateCountryBody[]
+): Promise<CountryResponse[]> => {
   try {
     const savedCountries = await Country.insertMany(data);
-    return savedCountries as CountryResponse[]; 
+    return savedCountries as CountryResponse[];
   } catch (err) {
-    console.error(err); 
-    throw new Error("Failed to create countries or some countries already exist.");
+    console.error(err);
+    throw new Error(
+      "Failed to create countries or some countries already exist."
+    );
   }
 };
