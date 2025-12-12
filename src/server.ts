@@ -2,18 +2,21 @@
 
 import express, { Request, Response } from "express";
 import accountRoutes from "./modules/account/account.routes";
+import http from "http";
+import cors from "cors";
+import { setupPriceSocket } from "./websocket/priceSocket";
 import orderRoutes from "./modules/order/order.routes";
 import authRoutes from "./modules/authentication/auth.routes"
-import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import countryRoutes from "./modules/country/country.routes";
 import profileRoutes from "./modules/profile/profile.routes";
 
 
 
 const app = express();
+const server = http.createServer(app);
 
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
@@ -31,4 +34,6 @@ app.get("/", (req: Request, res: Response) =>
   res.send("Express TypeScript API with MongoDB Atlas running")
 );
 
-export default app;
+setupPriceSocket(server);
+
+export default server;
