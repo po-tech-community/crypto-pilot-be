@@ -1,11 +1,7 @@
 // Controller files: handle logic between routes and services
 
 import { Request, Response } from "express";
-import {
-  CreateOrderBody,
-  UpdateOrderBody,
-  OrderResponse,
-} from "./order.model";
+import { CreateOrderBody, UpdateOrderBody, OrderResponse } from "./order.model";
 import * as OrderService from "./order.service";
 
 // GET /orders
@@ -13,7 +9,7 @@ export const getAllOrders = async (
   req: Request,
   res: Response<OrderResponse[]>
 ) => {
-  const orders = await OrderService.getAllOrders();
+  const orders = await OrderService.getAll();
   res.json(orders);
 };
 
@@ -22,7 +18,7 @@ export const getOrderById = async (
   req: Request<{ id: string }, OrderResponse | { message: string }>,
   res: Response<OrderResponse | { message: string }>
 ) => {
-  const order = await OrderService.getOrderById(req.params.id);
+  const order = await OrderService.getById(req.params.id);
   if (!order) return res.status(404).json({ message: "Order not found" });
   res.json(order);
 };
@@ -32,7 +28,7 @@ export const createOrder = async (
   req: Request<{}, OrderResponse, CreateOrderBody>,
   res: Response<OrderResponse>
 ) => {
-  const order = await OrderService.createOrder(req.body);
+  const order = await OrderService.create(req.body);
   res.status(201).json(order);
 };
 
@@ -45,7 +41,7 @@ export const updateOrder = async (
   >,
   res: Response<OrderResponse | { message: string }>
 ) => {
-  const order = await OrderService.updateOrder(req.params.id, req.body);
+  const order = await OrderService.update(req.params.id, req.body);
   if (!order) return res.status(404).json({ message: "Order not found" });
   res.json(order);
 };

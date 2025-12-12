@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import User, { IUser } from "./auth.models";
 import { RegisterRequest } from "./auth.types";
 
-export const FindAccount = async (
+export const get = async (
   fields: Record<string, any>
 ): Promise<IUser | null> => {
   try {
@@ -13,7 +13,7 @@ export const FindAccount = async (
   }
 };
 
-export const RegisterAccount = async (
+export const create = async (
   data: RegisterRequest,
   session?: mongoose.ClientSession
 ): Promise<IUser> => {
@@ -26,11 +26,15 @@ export const RegisterAccount = async (
     }
     return new_user;
   } catch (err) {
-    throw new Error("Failed to create user");
+    let message = "Failed to create user";
+    if (err instanceof Error) {
+      message = `Failed to create user: ${err.message}`;
+    }
+    throw new Error(message);
   }
 };
 
-export const UpdateAccount = async (
+export const update = async (
   userId: string,
   updateData: Partial<IUser>
 ): Promise<IUser | null> => {

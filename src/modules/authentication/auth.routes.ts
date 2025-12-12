@@ -3,15 +3,15 @@ import {
   ForgotPassword,
   ResetPassword,
   RefreshTokenHandler,
-  Logout,
-  DisabledProfile,
+  LogOut,
+  DisabledUser,
 } from "./auth.controller";
 
 const router = Router();
 router.post("/refresh", RefreshTokenHandler);
-router.post("/logout", Logout);
+router.post("/logout", LogOut);
 router.post("/forgot-password", ForgotPassword);
 router.post("/reset-password", ResetPassword);
-router.put("/disable", DisabledProfile);
+router.put("/disable", DisabledUser);
 
 export default router;

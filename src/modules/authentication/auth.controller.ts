@@ -24,11 +24,23 @@ import {
 } from "./auth.utils";
 import { v4 as uuidv4 } from "uuid";
 import { sendEmail } from "../../utils/sendemail";
-import { FindAccount, RegisterAccount, UpdateAccount } from "./auth.service";
+import { get, create, update } from "./auth.service";
 import { ERole } from "./auth.models";
 import mongoose from "mongoose";
 import Profile from "../profile/profile.model";
 
+/**
+ * Sign up a new user
+ * - Validate required fields: email, password, confirmPassword
+ * - Check password confirmation
+ * - Hash the password
+ * - Create a new user in the database (transaction)
+ * - Create the user profile
+ * - Generate JWT token
+ *
+ * @param req - Express request object containing RegisterRequest body
+ * @param res - Express response object returning RegisterResponse
+ */
 export const SignUp = async (
   req: Request<RegisterRequest>,
   res: Response<RegisterResponse>
@@ -46,7 +58,7 @@ export const SignUp = async (
     const hashedPassword = await hashedString(password);
 
     const userId = uuidv4();
-    const newUser = await RegisterAccount(
+    const newUser = await create(
       { userId, email, password: hashedPassword, role: role ?? "user" },
       session
     );
@@ -72,11 +84,29 @@ export const SignUp = async (
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
+
+    let message = "Server error";
+    if (err instanceof Error) {
+      message = err.message;
+    }
+
     console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message });
   }
 };
 
+/**
+ * Sign in an existing user
+ * - Validate email format
+ * - Find user by email
+ * - Verify password
+ * - Generate JWT and refresh tokens
+ * - Save hashed refresh token in DB
+ * - Set cookies for access and refresh tokens
+ *
+ * @param req - Express request object containing LoginRequest body
+ * @param res - Express response object returning LoginResponse
+ */
 export const SignIn = async (
   req: Request<LoginRequest>,
   res: Response<LoginResponse>
@@ -86,7 +116,7 @@ export const SignIn = async (
     return res.status(400).json({ message: "Invalid email" });
   }
   try {
-    const user = await FindAccount({ email: email });
+    const user = await get({ email: email });
     if (!user) {
       return res.status(404).json({ message: "Not Found" });
     }
@@ -129,6 +159,16 @@ export const SignIn = async (
   }
 };
 
+/**
+ * Refresh the access token using a valid refresh token
+ * - Check for refresh_token cookie
+ * - Verify refresh token
+ * - Compare with hashed token in DB
+ * - Generate new access token and set cookie
+ *
+ * @param req - Express request object
+ * @param res - Express response
+ */
 export const RefreshTokenHandler = async (req: Request, res: Response) => {
   const refresh_token = req.cookies.refresh_token;
   if (!refresh_token) {
@@ -137,7 +177,7 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
   try {
     const decoded: any = await verifyRefreshToken(refresh_token);
 
-    const user = await FindAccount({ userId: decoded.userId });
+    const user = await get({ userId: decoded.userId });
     if (user) {
       const userRefreshToken = await verifyHashedString(
         user!.refreshToken as string,
@@ -171,6 +211,16 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Send password reset link to user email
+ * - Validate email format
+ * - Check if user exists
+ * - Generate reset token and link
+ * - Send email
+ *
+ * @param req - Express request with ForgotRequest body
+ * @param res - Express response returning ForgotResponse
+ */
 export const ForgotPassword = async (
   req: Request<ForgotRequest>,
   res: Response<ForgotResponse>
@@ -179,7 +229,7 @@ export const ForgotPassword = async (
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Invalid" });
   }
-  const existedUser = await FindAccount({ email: email });
+  const existedUser = await get({ email: email });
   if (!existedUser) {
     return res.status(404).json({ message: "Not Found" });
   }
@@ -201,6 +251,16 @@ export const ForgotPassword = async (
   }
 };
 
+/**
+ * Send password reset link to user email
+ * - Validate email format
+ * - Check if user exists
+ * - Generate reset token and link
+ * - Send email
+ *
+ * @param req - Express request with ForgotRequest body
+ * @param res - Express response returning ForgotResponse
+ */
 export const ResetPassword = async (
   req: Request<ResetRequest>,
   res: Response<ResetResponse>
@@ -215,7 +275,7 @@ export const ResetPassword = async (
   try {
     const decoded = await verifyResetToken(token);
 
-    const user = await FindAccount({ userId: decoded.userId });
+    const user = await get({ userId: decoded.userId });
 
     if (!user) {
       return res.status(404).json({ message: "Not Found" });
@@ -238,13 +298,21 @@ export const ResetPassword = async (
   }
 };
 
-export const Logout = async (req: Request, res: Response) => {
+/**
+ * Logout user
+ * - Invalidate refresh token in DB
+ * - Clear access_token and refresh_token cookies
+ *
+ * @param req - Express request object
+ * @param res - Express response
+ */
+export const LogOut = async (req: Request, res: Response) => {
   try {
     const token = req.cookies.access_token;
     if (token) {
       const decoded: any = await verifyToken(token);
       if (decoded?.userId) {
-        await UpdateAccount(decoded.userId, { refreshToken: undefined });
+        await update(decoded.userId, { refreshToken: undefined });
       }
     }
 
@@ -257,7 +325,16 @@ export const Logout = async (req: Request, res: Response) => {
   }
 };
 
-export const DisabledProfile = async (
+/**
+ * Disable a user account
+ * - Check if access_token exists
+ * - Verify token and get user role
+ * - Admin can disable any user, user can disable self
+ *
+ * @param req - Express request with DisableUserRequest body
+ * @param res - Express response
+ */
+export const DisabledUser = async (
   req: Request<{}, {}, DisableUserRequest>,
   res: Response
 ) => {
@@ -274,24 +351,24 @@ export const DisabledProfile = async (
     }
     const userRole = decoded.role as ERole;
     if (userRole === ERole.admin) {
-      const user_ = await FindAccount({
+      const user_ = await get({
         userId: req.body.userId,
       });
       if (!user_) {
         return res.status(404).json({ message: "Not Found" });
       }
-      await UpdateAccount(req.body.userId!, {
+      await update(req.body.userId!, {
         updatedBy: userRole,
         isActive: false,
       });
     } else {
-      const user_ = await FindAccount({
+      const user_ = await get({
         userId: decoded.userId,
       });
       if (!user_) {
         return res.status(404).json({ message: "Not Found" });
       }
-      await UpdateAccount(decoded.userId, {
+      await update(decoded.userId, {
         updatedBy: decoded.userId,
         isActive: false,
       });
