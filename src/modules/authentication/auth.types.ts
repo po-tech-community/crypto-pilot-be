@@ -6,16 +6,16 @@ export interface JwtPayload {
   role: ERole;
 }
 
-export interface AuthResponse{
+export interface AuthResponse {
   userId: string;
   email: string;
   password: string;
   role: ERole;
   refreshToken?: string;
-
 }
 
 export interface RegisterRequest {
+  userId: string;
   email: string;
   password: string;
   confirmPassword?: string;
@@ -59,7 +59,7 @@ export interface AuthRequest extends Request {
 }
 
 export interface DisableUserRequest {
-  userId?: string
+  userId?: string;
   isActive: boolean;
-  updatedBy?:string
+  updatedBy?: string;
 }

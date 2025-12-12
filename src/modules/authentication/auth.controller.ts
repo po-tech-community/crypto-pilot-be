@@ -4,7 +4,6 @@ import {
   RegisterRequest,
   LoginRequest,
   LoginResponse,
-  AuthRequest,
   ForgotRequest,
   ForgotResponse,
   ResetRequest,
@@ -25,53 +24,55 @@ import {
 } from "./auth.utils";
 import { v4 as uuidv4 } from "uuid";
 import { sendEmail } from "../../utils/sendemail";
-import jwt from "jsonwebtoken";
 import { FindAccount, RegisterAccount, UpdateAccount } from "./auth.service";
 import { ERole } from "./auth.models";
+import mongoose from "mongoose";
+import Profile from "../profile/profile.model";
 
 export const SignUp = async (
   req: Request<RegisterRequest>,
   res: Response<RegisterResponse>
 ) => {
   const { email, password, confirmPassword, role } = req.body;
-  if (!email || !password) {
+  if (!email || !password)
     return res.status(400).json({ message: "Missing email or password" });
-  }
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ message: "Invalid" });
-  }
-  const user = await FindAccount({ email: email });
-  if (user) {
-    return res.status(400).json({ message: "Email already exists" });
-  }
-  if (typeof password === "string" && password.length < 6) {
-    return res
-      .status(400)
-      .json({ message: "Password must be at least 6 characters" });
-  }
+  if (password !== confirmPassword)
+    return res.status(400).json({ message: "Passwords do not match" });
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
-    } else {
-      const hashedPassword = await hashedString(password);
+    const hashedPassword = await hashedString(password);
 
-      const data = {
-        userId: uuidv4(),
-        email: email,
-        password: hashedPassword,
-        role: role ?? "user",
-      };
+    const userId = uuidv4();
+    const newUser = await RegisterAccount(
+      { userId, email, password: hashedPassword, role: role ?? "user" },
+      session
+    );
 
-      const new_user = await RegisterAccount(data);
+    await Profile.create(
+      [
+        {
+          userId: newUser.userId,
+          firstName: email.split("@")[0],
+          lastName: "",
+          joinDate: new Date(),
+        },
+      ],
+      { session }
+    );
 
-      const token = signToken({
-        userId: new_user.userId,
-        role: new_user.role,
-      });
+    await session.commitTransaction();
+    session.endSession();
 
-      res.status(200).json({ message: "User Created", token: token });
-    }
+    const token = signToken({ userId: newUser.userId, role: newUser.role });
+
+    res.status(200).json({ message: "User Created", token });
   } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(err);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -237,26 +238,6 @@ export const ResetPassword = async (
   }
 };
 
-export const Profile = async (req: AuthRequest, res: Response) => {
-  try {
-    const user = await FindAccount({ userId: req.user!.userId });
-
-    if (!user) {
-      return res.status(404).json({ message: "Not Found" });
-    }
-    res.status(200).json({
-      message: "Successfully",
-      data: {
-        email: user.email,
-        userId: user.userId,
-        role: user.role,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
 export const Logout = async (req: Request, res: Response) => {
   try {
     const token = req.cookies.access_token;
@@ -276,7 +257,6 @@ export const Logout = async (req: Request, res: Response) => {
   }
 };
 
-
 export const DisabledProfile = async (
   req: Request<{}, {}, DisableUserRequest>,
   res: Response
@@ -293,32 +273,33 @@ export const DisabledProfile = async (
         .json({ message: "Unauthorized: Invalid or expired token." });
     }
     const userRole = decoded.role as ERole;
-    if(userRole === ERole.admin){
+    if (userRole === ERole.admin) {
       const user_ = await FindAccount({
-        userId: req.body.userId
+        userId: req.body.userId,
       });
       if (!user_) {
         return res.status(404).json({ message: "Not Found" });
       }
-      await UpdateAccount(req.body.userId!,{updatedBy: userRole ,isActive: false});
-      
-    }
-    else{
+      await UpdateAccount(req.body.userId!, {
+        updatedBy: userRole,
+        isActive: false,
+      });
+    } else {
       const user_ = await FindAccount({
-        userId: decoded.userId
+        userId: decoded.userId,
       });
       if (!user_) {
         return res.status(404).json({ message: "Not Found" });
       }
-      await UpdateAccount(decoded.userId,{updatedBy: decoded.userId ,isActive: false});
+      await UpdateAccount(decoded.userId, {
+        updatedBy: decoded.userId,
+        isActive: false,
+      });
     }
-    
+
     res.status(204).send();
-    
   } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Server Error" });
   }
 };
-
-

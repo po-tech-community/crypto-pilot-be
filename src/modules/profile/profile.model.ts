@@ -14,7 +14,7 @@ const ProfileSchema: Schema = new Schema(
   {
     userId: { type: String, required: true, unique: true, ref: "User" },
     firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    lastName: { type: String, required: false },
     avatar: { type: String },
     joinDate: { type: Date, required: true },
     phone: {
@@ -25,7 +25,7 @@ const ProfileSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Country",
       required: false,
-      defaut: new Types.ObjectId("69365d89d6ebcc3c6f4affa9"),
+      default: new Types.ObjectId("69365d89d6ebcc3c6f4affa9"),
     },
   },
   { timestamps: true }
