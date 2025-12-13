@@ -4,23 +4,40 @@ import express, { Request, Response } from "express";
 import accountRoutes from "./modules/account/account.routes";
 import historyRoutes from "./modules/history/history.routes";
 import cors from "cors";
+import http from "http";
+import { setupPriceSocket } from "./websocket/priceSocket";
+import orderRoutes from "./modules/order/order.routes";
+import authRoutes from "./modules/authentication/auth.routes";
+import cookieParser from "cookie-parser";
+import countryRoutes from "./modules/country/country.routes";
+import profileRoutes from "./modules/profile/profile.routes";
+import { SignUp, SignIn } from "./modules/authentication/auth.controller";
+import { AuthMiddleware } from "./modules/authentication/auth.middleware";
 
 const app = express();
+const server = http.createServer(app);
 
+app.use(cors());
 app.use(express.json());
-// CORS configuration to allow requests from frontend
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  })
-);
+app.use(cookieParser());
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+
+// Public routes
+app.use("/api/auth/register", SignUp);
+app.use("/api/auth/login", SignIn);
+
 // Routes
-app.use("/api/accounts", accountRoutes);
 app.use("/api/history", historyRoutes);
+app.use("/api/auth", AuthMiddleware, authRoutes);
+app.use("/api/countries", AuthMiddleware, countryRoutes);
+app.use("/api/profile", AuthMiddleware, profileRoutes);
+app.use("/api/orders", AuthMiddleware, orderRoutes);
 
 // Health check
 app.get("/", (req: Request, res: Response) =>
   res.send("Express TypeScript API with MongoDB Atlas running")
 );
 
-export default app;
+setupPriceSocket(server);
+
+export default server;
