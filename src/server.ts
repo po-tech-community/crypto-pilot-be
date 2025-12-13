@@ -1,8 +1,10 @@
 // Setup basic Express server + Routes
 
 import express, { Request, Response } from "express";
-import http from "http";
+import accountRoutes from "./modules/account/account.routes";
+import historyRoutes from "./modules/history/history.routes";
 import cors from "cors";
+import http from "http";
 import { setupPriceSocket } from "./websocket/priceSocket";
 import orderRoutes from "./modules/order/order.routes";
 import authRoutes from "./modules/authentication/auth.routes";
@@ -25,6 +27,7 @@ app.use("/api/auth/register", SignUp);
 app.use("/api/auth/login", SignIn);
 
 // Routes
+app.use("/api/history", historyRoutes);
 app.use("/api/auth", AuthMiddleware, authRoutes);
 app.use("/api/countries", AuthMiddleware, countryRoutes);
 app.use("/api/profile", AuthMiddleware, profileRoutes);
