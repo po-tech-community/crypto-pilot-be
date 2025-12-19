@@ -5,7 +5,6 @@ import {
   createHistoryController,
   updateHistoryController,
   deleteHistoryController,
-  seedHistoryController,
 } from "./history.controller";
 
 const historyRoutes = Router();

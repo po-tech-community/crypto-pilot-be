@@ -5,7 +5,6 @@ import {
   getHistoryEntry,
   updateHistoryEntry,
   deleteHistoryEntry,
-  seedMockHistory,
 } from "./history.service";
 
 export async function getHistoryController(req: Request, res: Response) {
@@ -65,14 +64,5 @@ export async function deleteHistoryController(req: Request, res: Response) {
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ message: "Failed to delete history entry" });
-  }
-}
-export async function seedHistoryController(req: Request, res: Response) {
-  try {
-    const data = await seedMockHistory();
-    res.status(201).json(data);
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to seed mock history" });
   }
 }

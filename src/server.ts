@@ -1,7 +1,6 @@
 // Setup basic Express server + Routes
 
 import express, { Request, Response } from "express";
-import accountRoutes from "./modules/account/account.routes";
 import historyRoutes from "./modules/history/history.routes";
 import cors from "cors";
 import http from "http";
