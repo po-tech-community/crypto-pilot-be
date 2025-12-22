@@ -23,10 +23,10 @@ const prices: Prices = {
 
 // Mapping symbol -> prices key
 const SYMBOL_MAP: Record<string, keyof Prices> = {
-  BTCUSD: "BTC",
-  ETHUSD: "ETH",
-  XRPUSD: "XRP",
-  SOLUSD: "SOL",
+  BTCUSDT: "BTC",
+  ETHUSDT: "ETH",
+  XRPUSDT: "XRP",
+  SOLUSDT: "SOL",
 };
 
 // Decimal precision for each coin
@@ -37,9 +37,13 @@ const PRECISION_MAP: Record<keyof Prices, number> = {
   SOL: 2,
 };
 
+let io: SocketIOServer;
+
 export function setupPriceSocket(server: HTTPServer) {
-  const io = new SocketIOServer(server, {
-    cors: { origin: FRONTEND_URL },
+  io = new SocketIOServer(server, {
+    cors: { origin: FRONTEND_URL || "*",
+    credentials: true,
+     },
   });
 
   console.log("WebSocket server started");
@@ -79,5 +83,12 @@ export function setupPriceSocket(server: HTTPServer) {
     socket.emit("priceUpdate", prices);
   });
 
+  return io;
+}
+
+export function getSocketIO(): SocketIOServer {
+  if (!io) {
+    throw new Error("Socket.IO not initialized! Call setupPriceSocket first.");
+  }
   return io;
 }
