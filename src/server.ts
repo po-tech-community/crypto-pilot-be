@@ -5,6 +5,7 @@ import historyRoutes from "./modules/history/history.routes";
 import cors from "cors";
 import http from "http";
 import { setupPriceSocket } from "./websocket/priceSocket";
+import { setupOrderSocket } from "./websocket/orderSocket"; 
 import orderRoutes from "./modules/order/order.routes";
 import authRoutes from "./modules/authentication/auth.routes";
 import cookieParser from "cookie-parser";
@@ -38,5 +39,6 @@ app.get("/", (req: Request, res: Response) =>
 );
 
 setupPriceSocket(server);
+setupOrderSocket();
 
 export default server;

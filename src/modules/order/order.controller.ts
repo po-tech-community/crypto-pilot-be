@@ -3,6 +3,8 @@
 import { Request, Response } from "express";
 import { CreateOrderBody, UpdateOrderBody, OrderResponse } from "./order.model";
 import * as OrderService from "./order.service";
+import { broadcastOrderUpdate } from "../../websocket/orderSocket";  // ← NEW IMPORT
+
 
 // GET /orders
 export const getAllOrders = async (
@@ -29,6 +31,7 @@ export const createOrder = async (
   res: Response<OrderResponse>
 ) => {
   const order = await OrderService.create(req.body);
+  broadcastOrderUpdate("orderCreated", order);
   res.status(201).json(order);
 };
 
@@ -43,6 +46,8 @@ export const updateOrder = async (
 ) => {
   const order = await OrderService.update(req.params.id, req.body);
   if (!order) return res.status(404).json({ message: "Order not found" });
+
+  broadcastOrderUpdate("orderUpdated", order);
   res.json(order);
 };
 
@@ -53,5 +58,6 @@ export const deleteOrder = async (
 ) => {
   const ok = await OrderService.deleteOrder(req.params.id);
   if (!ok) return res.status(404).send();
+  broadcastOrderUpdate("orderDeleted", { id: req.params.id });
   res.status(204).send();
 };
