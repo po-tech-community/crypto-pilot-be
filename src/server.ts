@@ -13,6 +13,7 @@ import countryRoutes from "./modules/country/country.routes";
 import profileRoutes from "./modules/profile/profile.routes";
 import { SignUp, SignIn } from "./modules/authentication/auth.controller";
 import { AuthMiddleware } from "./modules/authentication/auth.middleware";
+import { depositRouter } from "./modules/deposit/deposit.routes";
 
 const app = express();
 const server = http.createServer(app);
@@ -32,7 +33,7 @@ app.use("/api/auth", AuthMiddleware, authRoutes);
 app.use("/api/countries", AuthMiddleware, countryRoutes);
 app.use("/api/profile", AuthMiddleware, profileRoutes);
 app.use("/api/orders", AuthMiddleware, orderRoutes);
-
+app.use("/api/deposit", AuthMiddleware, depositRouter);
 // Health check
 app.get("/", (req: Request, res: Response) =>
   res.send("Express TypeScript API with MongoDB Atlas running")
