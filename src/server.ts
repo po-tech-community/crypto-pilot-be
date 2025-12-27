@@ -18,14 +18,13 @@ import { depositRouter } from "./modules/deposit/deposit.routes";
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
 // Public routes
-app.use("/api/auth/register", SignUp);
-app.use("/api/auth/login", SignIn);
+app.post("/api/auth/register", SignUp);
+app.post("/api/auth/login", SignIn);
 
 // Routes
 app.use("/api/history", historyRoutes);
