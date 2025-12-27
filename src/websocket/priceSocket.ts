@@ -41,9 +41,7 @@ let io: SocketIOServer;
 
 export function setupPriceSocket(server: HTTPServer) {
   io = new SocketIOServer(server, {
-    cors: { origin: FRONTEND_URL || "*",
-    credentials: true,
-     },
+    cors: { origin: FRONTEND_URL || "*", credentials: true },
   });
 
   console.log("WebSocket server started");
@@ -62,7 +60,7 @@ export function setupPriceSocket(server: HTTPServer) {
         const precision = PRECISION_MAP[key];
         prices[key] = parseFloat(ticker.c).toFixed(precision);
         io.emit("priceUpdate", prices);
-        // console.log(prices);
+        console.log(prices);
       }
     } catch (err) {
       console.error("Failed to parse message:", err);

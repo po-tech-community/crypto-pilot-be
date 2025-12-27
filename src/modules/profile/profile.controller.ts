@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import {
-  ProfileResponse,
-} from "./profile.types";
+import { ProfileResponse } from "./profile.types";
 import { FindProfile, GetAll, UpdatedProfile } from "./profile.service";
 import { PopulateOptions, Types } from "mongoose";
 import { toProfileDTO } from "./profile.utils";
@@ -28,7 +26,6 @@ export const GetAllProfile = async (
   res: Response<{}, ProfileResponse[]>
 ) => {
   try {
-    
     const user = req.user;
 
     if (!user) {
@@ -58,9 +55,8 @@ export const GetProfile = async (
       return res.status(404).json({ message: "Not Found" });
     }
 
-    return res.status(200).json({ data: toProfileDTO(profile) });
-  } 
-  catch {
+    return res.status(200).json(toProfileDTO(profile));
+  } catch {
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -90,9 +86,7 @@ export const UpdateProfile = async (
     }
 
     if (phone && !PHONE_REGREX.test(phone)) {
-      return res
-        .status(400)
-        .json({ message: "invalid phone format" });
+      return res.status(400).json({ message: "invalid phone format" });
     }
 
     const data = {

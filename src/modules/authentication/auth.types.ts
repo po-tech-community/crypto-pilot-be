@@ -4,6 +4,8 @@ import { ERole } from "./auth.models";
 export interface JwtPayload {
   userId: string;
   role: ERole;
+  userEmail: string;
+  userName: string;
 }
 
 export interface AuthResponse {

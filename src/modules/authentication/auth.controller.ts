@@ -78,7 +78,12 @@ export const SignUp = async (
     await session.commitTransaction();
     session.endSession();
 
-    const token = signToken({ userId: newUser.userId, role: newUser.role });
+    const token = signToken({
+      userId: newUser.userId,
+      userEmail: newUser.email,
+      userName: newUser.name,
+      role: newUser.role,
+    });
 
     res.status(200).json({ message: "User Created", token });
   } catch (err) {
@@ -126,11 +131,15 @@ export const SignIn = async (
     }
     const token = signToken({
       userId: user.userId,
+      userEmail: user.email,
+      userName: user.name,
       role: user.role,
     });
     const refreshToken_ = refreshToken({
       userId: user.userId,
       role: user.role,
+      userEmail: user.email,
+      userName: user.name,
     });
     user.refreshToken = await hashedString(refreshToken_);
     await user.save();
@@ -189,6 +198,8 @@ export const RefreshTokenHandler = async (req: Request, res: Response) => {
 
       const newAccessToken = signToken({
         userId: user!.userId,
+        userEmail: user!.email,
+        userName: user!.name,
         role: user!.role,
       });
 
@@ -236,6 +247,8 @@ export const ForgotPassword = async (
   try {
     const resetToken_: any = resetToken({
       userId: existedUser.userId,
+      userEmail: existedUser.email,
+      userName: existedUser.name,
       role: existedUser.role,
     });
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken_}`;
