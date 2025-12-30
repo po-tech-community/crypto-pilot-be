@@ -8,7 +8,7 @@ export type DepositStatus = "PENDING" | "COMPLETED" | "FAILED";
 
 export type DepositDoc = {
   _id: mongoose.Types.ObjectId;
-  userId: mongoose.Types.ObjectId;
+  userId: string;
   asset: string;
   network: string;
   address: string;
@@ -45,12 +45,22 @@ export type DepositQuery = Partial<{
   status: DepositStatus;
 }>;
 
+
+type FindDepositQuery = Partial<{
+  userId: string;
+  asset: string;
+  network: string;
+  address: string;
+  txHash: string;
+  status: DepositStatus;
+}>;
+
 const DepositSchema = new Schema<DepositDoc>(
   {
-    userId: { type: Schema.Types.ObjectId, required: true, index: true },
+    userId: { type: String, required: true, index: true, ref:'User' },
     asset: { type: String, required: true, trim: true },
-    network: { type: String, required: true, trim: true },
-    address: { type: String, required: true, trim: true, index: true },
+    network: { type: String, required: true, trim: true, unique:false },
+    address: { type: String, required: true, trim: true, unique:false },
     amount: { type: String, required: true, default: "0" },
     txHash: { type: String, required: false, default: null },
     confirmations: { type: Number, required: true, default: 0 },
@@ -72,7 +82,7 @@ const Deposit = mongoose.model<DepositDoc>("Deposit", DepositSchema);
 export const depositModel = {
   async create(input: CreateDepositInput): Promise<DepositDoc> {
     const doc = await Deposit.create({
-      userId: new mongoose.Types.ObjectId(input.userId),
+      userId: input.userId,
       asset: input.asset,
       network: input.network,
       address: input.address,
@@ -89,6 +99,23 @@ export const depositModel = {
     return doc ?? null;
   },
 
+  async findByOne(
+    query: FindDepositQuery
+  ): Promise<DepositDoc | null> {
+    const doc = await Deposit.findOne(query)
+      .lean<DepositDoc>()
+      .exec();
+  
+    return doc ?? null;
+  },
+  
+  async findMany(
+    query: FindDepositQuery
+  ): Promise<DepositDoc[]> {
+    return Deposit.find(query).lean().exec();
+  },
+  
+
   async list(
     query: DepositQuery,
     limit = 50,
@@ -97,8 +124,10 @@ export const depositModel = {
     const mongoQuery: Record<string, any> = {};
 
     if (query.userId) {
-      if (!mongoose.isValidObjectId(query.userId)) return [];
-      mongoQuery.userId = new mongoose.Types.ObjectId(query.userId);
+      if (!query.userId){
+        return []
+      };
+      mongoQuery.userId = query.userId;
     }
     if (query.asset) mongoQuery.asset = query.asset;
     if (query.network) mongoQuery.network = query.network;

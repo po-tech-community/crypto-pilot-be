@@ -1,5 +1,5 @@
 import { CreateDepositInput, DepositDoc, DepositQuery, UpdateDepositInput, depositModel } from "./deposit.model";
-
+import generateAddressForNetwork from "./deposit.utils";
 
 export class NotFoundError extends Error {
   constructor(message = "Not found") {
@@ -22,18 +22,31 @@ function isPositiveDecimalString(v: string): boolean {
 
 
 export const depositService = {
-  async createDeposit(input: CreateDepositInput): Promise<DepositDoc> {
-    if (!input.userId) throw new ValidationError("userId is required");
+  async createDeposit(userId: string, input: CreateDepositInput): Promise<DepositDoc> {
     if (!input.asset) throw new ValidationError("asset is required");
     if (!input.network) throw new ValidationError("network is required");
-    if (!input.address) throw new ValidationError("address is required");
+    const address = generateAddressForNetwork(input.network);
 
     if (input.amount !== undefined && !isPositiveDecimalString(input.amount)) {
       throw new ValidationError("amount must be a positive decimal string");
     }
-
     
-    return depositModel.create(input);
+    const existing = await depositModel.findByOne({
+      userId,
+      network:input.network,
+      status: "PENDING",
+    });
+    
+    if (existing) {
+      return existing; 
+    }
+    return depositModel.create({
+      userId,
+      asset: input.asset,
+      network: input.network,
+      address,
+      amount: input.amount
+    });
   },
 
   async getDeposit(id: string): Promise<DepositDoc> {

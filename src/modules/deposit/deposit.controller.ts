@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { depositService, NotFoundError, ValidationError } from "./deposit.service";
+import { AuthRequest } from "../authentication/auth.types";
+import { CHAIN_CONFIG } from "./deposit.config";
 
 function parsePagination(req: Request) {
   const limitRaw = req.query.limit;
@@ -26,11 +28,17 @@ function handleError(res: Response, err: unknown) {
 
 
 export const depositController = {
-  async create(req: Request, res: Response) {
+  async create(req: AuthRequest, res: Response) {
     try {
-      const created = await depositService.createDeposit(req.body);
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const created = await depositService.createDeposit(userId, req.body);
       return res.status(201).json(created);
     } catch (err) {
+      console.log(err)
       return handleError(res, err);
     }
   },
@@ -38,21 +46,30 @@ export const depositController = {
   async getById(req: Request, res: Response) {
     try {
       const dep = await depositService.getDeposit(req.params.id);
-      return res.status(200).json(dep);
+      const chain = CHAIN_CONFIG[dep.network];
+
+      return res.status(200).json({...dep,
+        requiredConfirmations: chain?.requiredConfirmations ?? 0,
+        estimatedBlockTimeSec: chain?.estimatedBlockTimeSec ?? 0});
     } catch (err) {
       return handleError(res, err);
     }
   },
 
-  async list(req: Request, res: Response) {
+  async list(req: AuthRequest, res: Response) {
     try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { limit, offset } = parsePagination(req);
 
       const query = {
-        userId: typeof req.query.userId === "string" ? req.query.userId : undefined,
-        asset: typeof req.query.asset === "string" ? req.query.asset : undefined,
-        network: typeof req.query.network === "string" ? req.query.network : undefined,
-        status: typeof req.query.status === "string" ? (req.query.status as any) : undefined,
+        // userId: typeof req.query.userId === "string" ? req.query.userId : undefined,
+        // asset: typeof req.query.asset === "string" ? req.query.asset : undefined,
+        // network: typeof req.query.network === "string" ? req.query.network : undefined,
+        // status: typeof req.query.status === "string" ? (req.query.status as any) : undefined,
+        userId
       };
 
       const data = await depositService.listDeposits(query, { limit, offset });
