@@ -6,8 +6,12 @@ import {
   updateHistoryController,
   deleteHistoryController,
 } from "./history.controller";
+import { AuthMiddleware } from "../authentication/auth.middleware";
 
 const historyRoutes = Router();
+
+// protect all history endpoints
+historyRoutes.use(AuthMiddleware);
 
 // get method
 historyRoutes.get("/", getHistoryController);
