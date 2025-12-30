@@ -15,7 +15,7 @@ export async function getHistoryController(req: AuthRequest, res: Response) {
 
     if (!req.user) return res.status(401).json({ message: "Missing auth" });
 
-    // Non-admins can only fetch their own history
+    
     let targetAccountId: string | undefined = accountId ? String(accountId) : undefined;
     if (req.user.role !== ERole.admin) {
       targetAccountId = req.user.userId;
@@ -48,7 +48,7 @@ export async function createHistoryController(req: AuthRequest, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ message: "Missing auth" });
 
-    // Force the account to be the authenticated user's account
+    
     const data = { ...req.body, accountId: req.user.userId };
     const entry = await createHistoryEntry(data);
     res.status(201).json(entry);
