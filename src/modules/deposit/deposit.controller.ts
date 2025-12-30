@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { depositService, NotFoundError, ValidationError } from "./deposit.service";
 import { AuthRequest } from "../authentication/auth.types";
-import { CHAIN_CONFIG } from "./deposit.config";
+import { Network, NetworkKey } from "../constantAssets/asset.model";
 
 function parsePagination(req: Request) {
   const limitRaw = req.query.limit;
@@ -14,6 +14,9 @@ function parsePagination(req: Request) {
     limit: Number.isFinite(limit) ? Math.max(1, Math.min(200, limit)) : 50,
     offset: Number.isFinite(offset) ? Math.max(0, offset) : 0,
   };
+}
+function isNetworkKey(value: string): value is NetworkKey {
+  return value in Network;
 }
 
 function handleError(res: Response, err: unknown) {
@@ -46,11 +49,17 @@ export const depositController = {
   async getById(req: Request, res: Response) {
     try {
       const dep = await depositService.getDeposit(req.params.id);
-      const chain = CHAIN_CONFIG[dep.network];
+
+      if (!isNetworkKey(dep.network)) {
+        return res.status(500).json({ message: "Invalid network key" });
+      }
+      const chain = Network[dep.network];
 
       return res.status(200).json({...dep,
-        requiredConfirmations: chain?.requiredConfirmations ?? 0,
-        estimatedBlockTimeSec: chain?.estimatedBlockTimeSec ?? 0});
+        networkMeta: {
+        requiredConfirmations: chain.requiredConfirmations,
+        estimatedBlockTimeSec: chain.estimatedBlockTimeSec,
+      }});
     } catch (err) {
       return handleError(res, err);
     }

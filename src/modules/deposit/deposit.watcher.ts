@@ -1,6 +1,5 @@
-import { CHAIN_CONFIG } from "./deposit.config";
+import { Network, NetworkKey } from "../constantAssets/asset.model";
 import { depositModel } from "./deposit.model";
-
 
 function fakeTxHash() {
   return (
@@ -9,26 +8,38 @@ function fakeTxHash() {
   );
 }
 
+function isNetworkKey(value: string): value is NetworkKey {
+  return value in Network;
+}
+
 export function startDepositWatcher() {
   setInterval(async () => {
     const deposits = await depositModel.findMany({status: 'PENDING'});
 
     for (const dep of deposits) {
-      const chain = CHAIN_CONFIG[dep.network];
+      if (!isNetworkKey(dep.network)) {
+        continue;
+      }
+      const chain = Network[dep.network];
       if (!chain) continue;
-
 
       if (!dep.txHash) {
         if (Math.random() < 0.7) continue;
 
+        const initialConfirmations = 1;
+        
         await depositModel.updateById(dep._id.toString(), {
           txHash: fakeTxHash(),
-          confirmations: 1,
+          confirmations: initialConfirmations,
+          status: initialConfirmations >= chain.requiredConfirmations
+            ? "COMPLETED"
+            : "PENDING",
         });
 
         continue;
       }
       const next = dep.confirmations + 1;
+
 
       await depositModel.updateById(dep._id.toString(), {
         confirmations: next,
@@ -37,6 +48,9 @@ export function startDepositWatcher() {
             ? "COMPLETED"
             : "PENDING",
       });
+      if (dep.confirmations >= chain.requiredConfirmations) {
+        continue;
+      }
     }
   }, 15_000);
 }
