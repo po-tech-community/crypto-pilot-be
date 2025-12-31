@@ -13,7 +13,6 @@ export enum HistoryStatus {
   PARTIALLY_FILLED = "PARTIALLY_FILLED",
   CANCELLED = "CANCELLED",
 }
-
 export interface HistoryDocument extends Document {
   account: Types.ObjectId;
   type: HistoryType;
