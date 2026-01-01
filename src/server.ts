@@ -14,6 +14,10 @@ import profileRoutes from "./modules/profile/profile.routes";
 import { SignUp, SignIn } from "./modules/authentication/auth.controller";
 import { AuthMiddleware } from "./modules/authentication/auth.middleware";
 import { depositRouter } from "./modules/deposit/deposit.routes";
+import assetRoutes from "./modules/constantAssets/asset.routes";
+import { startDepositWatcher } from "./modules/deposit/deposit.watcher";
+import { withdrawRoute } from "./modules/withdraw/withdraw.routes";
+import { startWithdrawWatcher } from "./modules/withdraw/withdraw.watcher";
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +37,8 @@ app.use("/api/countries", AuthMiddleware, countryRoutes);
 app.use("/api/profile", AuthMiddleware, profileRoutes);
 app.use("/api/orders", AuthMiddleware, orderRoutes);
 app.use("/api/deposit", AuthMiddleware, depositRouter);
+app.use("/api/asset", AuthMiddleware, assetRoutes);
+app.use("/api/withdraw", AuthMiddleware, withdrawRoute);
 // Health check
 app.get("/", (req: Request, res: Response) =>
   res.send("Express TypeScript API with MongoDB Atlas running")
@@ -40,5 +46,7 @@ app.get("/", (req: Request, res: Response) =>
 
 setupPriceSocket(server);
 setupOrderSocket();
+startDepositWatcher();
+startWithdrawWatcher();
 
 export default server;
