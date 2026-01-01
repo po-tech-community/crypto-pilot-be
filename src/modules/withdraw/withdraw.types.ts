@@ -2,13 +2,8 @@ import mongoose from "mongoose";
 import { NetworkKey } from "../constantAssets/asset.model";
 
 
-export enum WithdrawStatus {
-    PENDING = 'PENDING',
-    PROCESSING = 'PROCESSING',
-    COMPLETED = 'COMPLETED',
-    FAILED = 'FAILED',
-    CANCELLED = 'CANCELLED'
-  }
+export type WithdrawStatus  = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
+  
 
 export interface WithdrawDocs {
     _id: mongoose.Types.ObjectId;

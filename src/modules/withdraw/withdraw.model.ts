@@ -13,6 +13,8 @@ const WithdrawSchema = new Schema<WithdrawDocs>(
     txHash: { type: String, required: false, default: null },
     confirmations: { type: Number, required: true, default: 0 },
     status: {type: String, required: true, default: "PENDING"},
+    processedAt: {type: Date},
+    completedAt: {type: Date}
   },
   { timestamps: true }
 );

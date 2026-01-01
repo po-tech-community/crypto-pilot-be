@@ -17,6 +17,7 @@ import { depositRouter } from "./modules/deposit/deposit.routes";
 import assetRoutes from "./modules/constantAssets/asset.routes";
 import { startDepositWatcher } from "./modules/deposit/deposit.watcher";
 import { withdrawRoute } from "./modules/withdraw/withdraw.routes";
+import { startWithdrawWatcher } from "./modules/withdraw/withdraw.watcher";
 
 const app = express();
 const server = http.createServer(app);
@@ -46,5 +47,6 @@ app.get("/", (req: Request, res: Response) =>
 setupPriceSocket(server);
 setupOrderSocket();
 startDepositWatcher();
+startWithdrawWatcher();
 
 export default server;

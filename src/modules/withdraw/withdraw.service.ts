@@ -23,7 +23,7 @@ export async function getWithdraw(id: string): Promise<WithdrawDocs>{
     if (!mongoose.isValidObjectId(id)){
         throw new Error("Internal server")
     };
-    const data = await Withdraw.findById(id).exec()
+    const data = await Withdraw.findById(id).lean()
     if(!data){
         throw new Error("Could not find data")
     }
@@ -44,6 +44,13 @@ export async function getListWithDraw(query: WithdrawQuery, opts?: { limit?: num
           .lean<WithdrawDocs[]>()
           .exec();
 
+    return data
+}
+
+export async function findMany(query: WithdrawQuery){
+    const data = await Withdraw.find(query).sort({ createdAt: -1 })
+        .lean()
+        .exec();
     return data
 }
 
