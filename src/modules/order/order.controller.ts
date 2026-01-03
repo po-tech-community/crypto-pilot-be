@@ -1,10 +1,10 @@
 // Controller files: handle logic between routes and services
 
 import { Request, Response } from "express";
-import { CreateOrderBody, UpdateOrderBody, OrderResponse } from "./order.model";
+import { UpdateOrderBody, OrderResponse, CreateOrderBody } from "./order.model";
 import * as OrderService from "./order.service";
-import { broadcastOrderUpdate } from "../../websocket/orderSocket";  // ← NEW IMPORT
-
+import { broadcastOrderUpdate } from "../../websocket/orderSocket";
+import { AuthRequest } from "../authentication/auth.types";
 
 // GET /orders
 export const getAllOrders = async (
@@ -27,21 +27,23 @@ export const getOrderById = async (
 
 // POST /orders
 export const createOrder = async (
-  req: Request<{}, OrderResponse, CreateOrderBody>,
-  res: Response<OrderResponse>
+  req: AuthRequest,
+  res: Response<OrderResponse | { message: string }>
 ) => {
-  const order = await OrderService.create(req.body);
-  broadcastOrderUpdate("orderCreated", order);
-  res.status(201).json(order);
+  try {
+    const userId = req.user!.userId;
+    const order = await OrderService.create(userId, req.body);
+
+    broadcastOrderUpdate("orderCreated", order);
+    res.status(201).json(order);
+  } catch (err: any) {
+    res.status(400).json({ message: err.message ?? "Invalid order" });
+  }
 };
 
 // PUT /orders/:id
 export const updateOrder = async (
-  req: Request<
-    { id: string },
-    OrderResponse | { message: string },
-    UpdateOrderBody
-  >,
+  req: Request<{ id: string }, OrderResponse | { message: string }, UpdateOrderBody>,
   res: Response<OrderResponse | { message: string }>
 ) => {
   const order = await OrderService.update(req.params.id, req.body);
@@ -58,6 +60,7 @@ export const deleteOrder = async (
 ) => {
   const ok = await OrderService.deleteOrder(req.params.id);
   if (!ok) return res.status(404).send();
+
   broadcastOrderUpdate("orderDeleted", { id: req.params.id });
   res.status(204).send();
 };
