@@ -2,40 +2,20 @@ import { Server as SocketIOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
 import WebSocket from "ws";
 import dotenv from "dotenv";
+import { updatePrices } from "../modules/chat/chat.service";
+import {
+  Prices,
+  SYMBOL_MAP,
+  PRECISION_MAP,
+  INITIAL_PRICES,
+} from "../modules/constantAssets/asset.model";
+
 dotenv.config();
 
 const FRONTEND_URL = process.env.FRONTEND_URL!;
 const BINANCE_WS = process.env.BINANCE_WS!;
 
-interface Prices {
-  BTC: string;
-  ETH: string;
-  XRP: string;
-  SOL: string;
-}
-
-const prices: Prices = {
-  BTC: "0",
-  ETH: "0",
-  XRP: "0",
-  SOL: "0",
-};
-
-// Mapping symbol -> prices key
-const SYMBOL_MAP: Record<string, keyof Prices> = {
-  BTCUSDT: "BTC",
-  ETHUSDT: "ETH",
-  XRPUSDT: "XRP",
-  SOLUSDT: "SOL",
-};
-
-// Decimal precision for each coin
-const PRECISION_MAP: Record<keyof Prices, number> = {
-  BTC: 2,
-  ETH: 2,
-  XRP: 4,
-  SOL: 2,
-};
+const prices: Prices = { ...INITIAL_PRICES };
 
 let io: SocketIOServer;
 
@@ -60,6 +40,7 @@ export function setupPriceSocket(server: HTTPServer) {
         const precision = PRECISION_MAP[key];
         prices[key] = parseFloat(ticker.c).toFixed(precision);
         io.emit("priceUpdate", prices);
+        updatePrices(prices);
         console.log(prices);
       }
     } catch (err) {

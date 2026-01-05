@@ -84,3 +84,49 @@ export const ASSETS: Asset[] = [
     networks: ["solana"],
   },
 ];
+
+export type CoinSymbol = "BTC" | "ETH" | "XRP" | "SOL";
+
+export interface Prices {
+  BTC: string;
+  ETH: string;
+  XRP: string;
+  SOL: string;
+}
+
+export interface NumericPrices {
+  BTC: number;
+  ETH: number;
+  XRP: number;
+  SOL: number;
+}
+
+export const SYMBOL_MAP: Record<string, CoinSymbol> = {
+  BTCUSDT: "BTC",
+  ETHUSDT: "ETH",
+  XRPUSDT: "XRP",
+  SOLUSDT: "SOL",
+};
+
+export const PRECISION_MAP: Record<CoinSymbol, number> = {
+  BTC: 2,
+  ETH: 2,
+  XRP: 4,
+  SOL: 2,
+};
+
+export const INITIAL_PRICES: Prices = {
+  BTC: "0",
+  ETH: "0",
+  XRP: "0",
+  SOL: "0",
+};
+
+export const SUPPORTED_COINS: CoinSymbol[] = ["BTC", "ETH", "XRP", "SOL"];
+
+export const COIN_NAMES: Record<CoinSymbol, string> = {
+  BTC: "Bitcoin",
+  ETH: "Ethereum",
+  XRP: "Ripple",
+  SOL: "Solana",
+};
