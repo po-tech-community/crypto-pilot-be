@@ -19,6 +19,7 @@ import assetRoutes from "./modules/constantAssets/asset.routes";
 import { startDepositWatcher } from "./modules/deposit/deposit.watcher";
 import { withdrawRoute } from "./modules/withdraw/withdraw.routes";
 import { startWithdrawWatcher } from "./modules/withdraw/withdraw.watcher";
+import { initializeOrderBook } from "./modules/order/order.matching";
 
 const app = express();
 const server = http.createServer(app);
@@ -51,5 +52,10 @@ setupPriceSocket(server);
 setupOrderSocket();
 startDepositWatcher();
 startWithdrawWatcher();
+
+// Initialize order matching engine
+initializeOrderBook().catch((err) => {
+  console.error("Failed to initialize order book:", err);
+});
 
 export default server;

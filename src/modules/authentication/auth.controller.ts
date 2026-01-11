@@ -14,6 +14,7 @@ import {
   hashedString,
   htmlTemplate,
   isValidEmail,
+  isValidPassword,
   refreshToken,
   resetToken,
   signToken,
@@ -48,6 +49,15 @@ export const SignUp = async (
   const { email, password, confirmPassword, role } = req.body;
   if (!email || !password)
     return res.status(400).json({ message: "Missing email or password" });
+  if (!isValidEmail(email))
+    return res.status(400).json({ message: "Invalid email format" });
+  if (!isValidPassword(password))
+    return res
+      .status(400)
+      .json({
+        message:
+          "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number",
+      });
   if (password !== confirmPassword)
     return res.status(400).json({ message: "Passwords do not match" });
 
@@ -123,11 +133,11 @@ export const SignIn = async (
   try {
     const user = await get({ email: email });
     if (!user) {
-      return res.status(404).json({ message: "Not Found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
     const match = await verifyHashedString(user.password, password);
     if (!match) {
-      return res.status(404).json({ message: "Not Found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
     const token = signToken({
       userId: user.userId,

@@ -7,11 +7,11 @@ import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 
 function generateEvmAddress() {
-    const wallet = Wallet.createRandom();
-    return {
-        address: wallet.address,
-        privateKey: wallet.privateKey
-    }
+  const wallet = Wallet.createRandom();
+  return {
+    address: wallet.address,
+    privateKey: wallet.privateKey,
+  };
 }
 
 const ECPair = ECPairFactory(ecc);
@@ -31,14 +31,19 @@ function generateBitcoinAddress(): string {
   return address;
 }
 
-function generateXrpAddress(): string {
-
+function generateBNBAddress(): string {
   const keyPair = ECPair.fromPrivateKey(randomBytes(32));
   const publicKey = keyPair.publicKey;
-  
-  const hash = require("crypto").createHash("sha256").update(publicKey).digest();
-  const ripemd = require("crypto").createHash("ripemd160").update(hash).digest();
-  
+
+  const hash = require("crypto")
+    .createHash("sha256")
+    .update(publicKey)
+    .digest();
+  const ripemd = require("crypto")
+    .createHash("ripemd160")
+    .update(hash)
+    .digest();
+
   return "r" + bs58.encode(ripemd).slice(0, 33);
 }
 
@@ -48,17 +53,17 @@ function generateSolanaAddress(): string {
 }
 
 export default function generateAddressForNetwork(network: string) {
-    switch (network) {
-      case "ethereum":
-      case "bsc":
-        return generateEvmAddress().address;
-      case "bitcoin":
-        return generateBitcoinAddress();
-      case "xrp":
-        return generateXrpAddress();
-      case "solana":
-        return generateSolanaAddress();
-      default:
-        throw new Error("unsupported network");
-    }
+  switch (network) {
+    case "ethereum":
+    case "bsc":
+      return generateEvmAddress().address;
+    case "bitcoin":
+      return generateBitcoinAddress();
+    case "BNB":
+      return generateBNBAddress();
+    case "solana":
+      return generateSolanaAddress();
+    default:
+      throw new Error("unsupported network");
+  }
 }

@@ -4,6 +4,13 @@ import { JwtPayload } from "./auth.types";
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+// Password must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+export function isValidPassword(password: string): boolean {
+  return passwordRegex.test(password);
+}
+
 export async function hashedString(strs: string): Promise<string> {
   try {
     const hash = await argon2.hash(strs);
@@ -31,22 +38,34 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY!, {
-    expiresIn: "30m",
+  if (!process.env.JWT_SECRET_KEY || process.env.JWT_SECRET_KEY.length < 32) {
+    throw new Error("JWT_SECRET_KEY must be at least 32 characters");
+  }
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+    expiresIn: "15m", // Shorter access token
     algorithm: "HS256",
   });
 }
 
 export function verifyToken(token: string): JwtPayload {
-  return jwt.verify(token, process.env.JWT_SECRET_KEY!) as JwtPayload;
+  if (!process.env.JWT_SECRET_KEY) {
+    throw new Error("JWT_SECRET_KEY not configured");
+  }
+  return jwt.verify(token, process.env.JWT_SECRET_KEY) as JwtPayload;
 }
 
 export function refreshToken(payload: JwtPayload): string {
-  return jwt.sign(payload, process.env.JWT_REFRESH_KEY!, { expiresIn: "1h" });
+  if (!process.env.JWT_REFRESH_KEY || process.env.JWT_REFRESH_KEY.length < 32) {
+    throw new Error("JWT_REFRESH_KEY must be at least 32 characters");
+  }
+  return jwt.sign(payload, process.env.JWT_REFRESH_KEY, { expiresIn: "7d" }); // 7 days for refresh
 }
 
 export function verifyRefreshToken(token: string): JwtPayload {
-  return jwt.verify(token, process.env.JWT_REFRESH_KEY!) as JwtPayload;
+  if (!process.env.JWT_REFRESH_KEY) {
+    throw new Error("JWT_REFRESH_KEY not configured");
+  }
+  return jwt.verify(token, process.env.JWT_REFRESH_KEY) as JwtPayload;
 }
 
 export function resetToken(payload: JwtPayload): string {

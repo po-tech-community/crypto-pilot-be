@@ -35,6 +35,7 @@ export async function AuthMiddleware(
 export function Authorize(...allowedRoles: ERole[]) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     const userRole = req.user?.role as ERole;
+    console.log("User role:", userRole);
 
     if (!userRole || !allowedRoles.includes(userRole)) {
       return res.status(403).json({ message: "Access denied" });

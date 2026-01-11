@@ -1,19 +1,19 @@
 import OpenAI from "openai";
 import { depositModel } from "../deposit/deposit.model";
 import Withdraw from "../withdraw/withdraw.model";
-import { 
-  Prices, 
-  NumericPrices, 
-  CoinSymbol, 
+import {
+  Prices,
+  NumericPrices,
+  CoinSymbol,
   SUPPORTED_COINS,
-  COIN_NAMES 
+  COIN_NAMES,
 } from "../constantAssets/asset.model";
 
 // Current crypto prices (updated by WebSocket)
 let currentPrices: NumericPrices = {
   BTC: 89000,
   ETH: 3000,
-  XRP: 2.0,
+  BNB: 2.0,
   SOL: 130,
 };
 
@@ -22,7 +22,7 @@ export function updatePrices(prices: Prices): void {
   currentPrices = {
     BTC: parseFloat(prices.BTC),
     ETH: parseFloat(prices.ETH),
-    XRP: parseFloat(prices.XRP),
+    BNB: parseFloat(prices.BNB),
     SOL: parseFloat(prices.SOL),
   };
 }
@@ -33,7 +33,7 @@ interface UserSummary {
   cryptoHoldings: {
     BTC: number;
     ETH: number;
-    XRP: number;
+    BNB: number;
     SOL: number;
   };
   totalValue: number;
@@ -47,82 +47,88 @@ interface Holdings {
   USD: number;
   BTC: number;
   ETH: number;
-  XRP: number;
+  BNB: number;
   SOL: number;
 }
 
 // Create empty holdings object
 function createEmptyHoldings(): Holdings {
-  return { USD: 0, BTC: 0, ETH: 0, XRP: 0, SOL: 0 };
+  return { USD: 0, BTC: 0, ETH: 0, BNB: 0, SOL: 0 };
 }
 
 // Add a deposit to holdings and return its USD value
 function addDeposit(holdings: Holdings, asset: string, amount: number): number {
   const upperAsset = asset.toUpperCase();
-  
+
   // Handle USD deposits
   if (upperAsset === "USD" || upperAsset === "USDT") {
     holdings.USD += amount;
     return amount;
   }
-  
+
   // Handle crypto deposits
   if (SUPPORTED_COINS.includes(upperAsset as CoinSymbol)) {
     const coin = upperAsset as CoinSymbol;
     holdings[coin] += amount;
     return amount * currentPrices[coin];
   }
-  
+
   return 0;
 }
 
 // Subtract a withdrawal from holdings and return its USD value
-function subtractWithdrawal(holdings: Holdings, asset: string, amount: number): number {
+function subtractWithdrawal(
+  holdings: Holdings,
+  asset: string,
+  amount: number
+): number {
   const upperAsset = asset.toUpperCase();
-  
+
   // Handle USD withdrawals
   if (upperAsset === "USD" || upperAsset === "USDT") {
     holdings.USD -= amount;
     return amount;
   }
-  
+
   // Handle crypto withdrawals
   if (SUPPORTED_COINS.includes(upperAsset as CoinSymbol)) {
     const coin = upperAsset as CoinSymbol;
     holdings[coin] -= amount;
     return amount * currentPrices[coin];
   }
-  
+
   return 0;
 }
 
 // Calculate total value of all crypto holdings in USD
 function calculateCryptoValue(holdings: Holdings): number {
   let total = 0;
-  
+
   for (const coin of SUPPORTED_COINS) {
     total += holdings[coin] * currentPrices[coin];
   }
-  
+
   return total;
 }
 
 // Format a single coin holding for display
 function formatCoinHolding(coin: CoinSymbol, amount: number): string {
-  const decimals = coin === "XRP" ? 2 : 6;
+  const decimals = coin === "BNB" ? 2 : 6;
   const usdValue = amount * currentPrices[coin];
-  return `- ${COIN_NAMES[coin]}: ${amount.toFixed(decimals)} ${coin} ($${usdValue.toFixed(2)})`;
+  return `- ${COIN_NAMES[coin]}: ${amount.toFixed(
+    decimals
+  )} ${coin} ($${usdValue.toFixed(2)})`;
 }
 
 // Format current prices for AI prompt
 function formatCurrentPrices(): string {
   const priceLines: string[] = [];
-  
+
   for (const coin of SUPPORTED_COINS) {
     const price = currentPrices[coin].toLocaleString();
     priceLines.push(`- ${coin}: $${price}`);
   }
-  
+
   return priceLines.join("\n");
 }
 
@@ -169,7 +175,7 @@ async function getUserSummary(userId: string): Promise<UserSummary | null> {
       cryptoHoldings: {
         BTC: holdings.BTC,
         ETH: holdings.ETH,
-        XRP: holdings.XRP,
+        BNB: holdings.BNB,
         SOL: holdings.SOL,
       },
       totalValue,
@@ -177,7 +183,6 @@ async function getUserSummary(userId: string): Promise<UserSummary | null> {
       totalWithdrawn,
       hasActivity,
     };
-    
   } catch (error) {
     console.error("Error getting user portfolio:", error);
     return null;
@@ -187,10 +192,10 @@ async function getUserSummary(userId: string): Promise<UserSummary | null> {
 // Build portfolio section for AI prompt
 function buildPortfolioText(summary: UserSummary): string {
   const lines: string[] = [];
-  
+
   lines.push("USER'S PORTFOLIO:");
   lines.push(`- Cash: $${summary.usdBalance.toFixed(2)}`);
-  
+
   // Add each coin they own
   for (const coin of SUPPORTED_COINS) {
     const amount = summary.cryptoHoldings[coin];
@@ -198,10 +203,10 @@ function buildPortfolioText(summary: UserSummary): string {
       lines.push(formatCoinHolding(coin, amount));
     }
   }
-  
+
   lines.push(`- Total Portfolio Value: $${summary.totalValue.toFixed(2)}`);
   lines.push(`- Total Deposited: $${summary.totalDeposited.toFixed(2)}`);
-  
+
   return lines.join("\n");
 }
 
@@ -209,14 +214,14 @@ function buildPortfolioText(summary: UserSummary): string {
 function buildSystemPrompt(summary: UserSummary | null): string {
   // Default message for new users
   let portfolioSection = "User is new and hasn't deposited any funds yet.";
-  
+
   // Build detailed portfolio if user has activity
   if (summary && summary.hasActivity) {
     portfolioSection = buildPortfolioText(summary);
   }
-  
+
   const pricesSection = formatCurrentPrices();
-  
+
   return `You are CryptoPilot AI, a friendly crypto trading assistant for a PAPER TRADING platform.
 
 ${portfolioSection}
@@ -235,7 +240,7 @@ IMPORTANT RULES:
 - Always remind users this is PAPER TRADING (fake money for learning)
 - Keep responses SHORT (2-4 sentences maximum)
 - Be friendly, encouraging, and educational
-- If asked about unsupported coins, say "We only support BTC, ETH, XRP, and SOL"
+- If asked about unsupported coins, say "We only support BTC, ETH, BNB, and SOL"
 
 EXAMPLES:
 - "Bitcoin (BTC) is currently at $89,280. It's the first cryptocurrency and is often called 'digital gold'. On CryptoPilot, you can practice trading it risk-free!"
@@ -246,28 +251,31 @@ EXAMPLES:
 // Initialize OpenAI client
 function initializeOpenAI(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("OpenAI API key not configured");
   }
-  
+
   return new OpenAI({ apiKey });
 }
 
 // Call OpenAI API to get chat response
-async function callOpenAI(systemPrompt: string, userMessage: string): Promise<string> {
+async function callOpenAI(
+  systemPrompt: string,
+  userMessage: string
+): Promise<string> {
   const openai = initializeOpenAI();
-  
+
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userMessage }
+      { role: "user", content: userMessage },
     ],
     max_tokens: 150,
     temperature: 0.7,
   });
-  
+
   const reply = completion.choices[0].message.content;
   return reply || "Sorry, I couldn't generate a response. Please try again.";
 }
@@ -280,15 +288,14 @@ export async function getChatResponse(
   try {
     // Get user's portfolio from database
     const summary = await getUserSummary(userId);
-    
+
     // Build AI prompt with portfolio context
     const systemPrompt = buildSystemPrompt(summary);
-    
+
     // Call OpenAI and get response
     const reply = await callOpenAI(systemPrompt, userMessage);
-    
+
     return reply;
-    
   } catch (error: any) {
     console.error("Chat service error:", error.message);
     throw new Error("Failed to get AI response");
@@ -300,11 +307,11 @@ export function validateMessage(message: string): boolean {
   if (!message || typeof message !== "string") {
     return false;
   }
-  
+
   const trimmed = message.trim();
   if (trimmed.length === 0 || trimmed.length > 500) {
     return false;
   }
-  
+
   return true;
 }

@@ -5,7 +5,19 @@ import { PopulateOptions, Types } from "mongoose";
 import { toProfileDTO } from "./profile.utils";
 import { AuthRequest } from "../authentication/auth.types";
 
-const PHONE_REGREX = /^(\d{3})-(\d{3})-(\d{4})$/;
+// More flexible phone regex: supports international formats
+// Examples: +1-234-567-8900, 234-567-8900, +44 20 7946 0958, etc.
+const PHONE_REGEX = /^[\d\s()+-]+$/;
+
+function isValidPhone(phone: string): boolean {
+  // Must be between 10-15 digits (international standard)
+  const digitsOnly = phone.replace(/\D/g, "");
+  return (
+    PHONE_REGEX.test(phone) &&
+    digitsOnly.length >= 10 &&
+    digitsOnly.length <= 15
+  );
+}
 
 const popOptions: PopulateOptions[] = [
   {
@@ -85,8 +97,13 @@ export const UpdateProfile = async (
         .json({ message: "first name or last name cannot be empty" });
     }
 
-    if (phone && !PHONE_REGREX.test(phone)) {
-      return res.status(400).json({ message: "invalid phone format" });
+    if (phone && !isValidPhone(phone)) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid phone format. Must be 10-15 digits with optional formatting.",
+        });
     }
 
     const data = {

@@ -6,6 +6,9 @@ import Order, {
   UpdateOrderBody,
   OrderResponse,
 } from "./order.model";
+import { executeMarketOrder, matchLimitOrder } from "./order.matching";
+import { Prices } from "../constantAssets/asset.model";
+import { checkSufficientBalance } from "./order.balance";
 
 const toResponse = (doc: IOrder): OrderResponse => ({
   id: doc._id.toString(),
@@ -14,12 +17,19 @@ const toResponse = (doc: IOrder): OrderResponse => ({
   type: doc.type,
   side: doc.side,
   amount: doc.amount,
+  originalAmount: doc.originalAmount,
+  filledAmount: doc.filledAmount,
+  remainingAmount: doc.amount, // amount is the remaining amount
   limitPrice: doc.limitPrice,
+  executionPrice: doc.executionPrice,
   status: doc.status,
+  createdAt: doc.createdAt,
+  updatedAt: doc.updatedAt,
 });
 
-export const getAll = async (): Promise<OrderResponse[]> => {
-  const orders = await Order.find();
+export const getAll = async (userId?: string): Promise<OrderResponse[]> => {
+  const filter = userId ? { userId } : {};
+  const orders = await Order.find(filter).sort({ createdAt: -1 });
   return orders.map(toResponse);
 };
 
@@ -28,7 +38,7 @@ export const getById = async (id: string): Promise<OrderResponse | null> => {
   return order ? toResponse(order) : null;
 };
 
-const ALLOWED_ASSETS = ["BTC", "ETH", "SOL", "XRP"] as const;
+const ALLOWED_ASSETS = ["BTC", "ETH", "SOL", "BNB"] as const;
 
 function validateCreateOrder(data: CreateOrderBody) {
   // asset
@@ -37,7 +47,11 @@ function validateCreateOrder(data: CreateOrderBody) {
   }
 
   // amount
-  if (typeof data.amount !== "number" || Number.isNaN(data.amount) || data.amount <= 0) {
+  if (
+    typeof data.amount !== "number" ||
+    Number.isNaN(data.amount) ||
+    data.amount <= 0
+  ) {
     throw new Error("Amount must be a number > 0");
   }
 
@@ -53,10 +67,15 @@ function validateCreateOrder(data: CreateOrderBody) {
 
   // limitPrice rules
   if (data.type === "limit") {
-    if (typeof data.limitPrice !== "number" || Number.isNaN(data.limitPrice) || data.limitPrice <= 0) {
-      throw new Error("limitPrice is required for limit orders and must be > 0");
+    if (
+      typeof data.limitPrice !== "number" ||
+      Number.isNaN(data.limitPrice) ||
+      data.limitPrice <= 0
+    ) {
+      throw new Error(
+        "limitPrice is required for limit orders and must be > 0"
+      );
     }
-
   } else {
     // market order -> ignore limitPrice
     delete (data as any).limitPrice;
@@ -65,13 +84,56 @@ function validateCreateOrder(data: CreateOrderBody) {
 
 export const create = async (
   userId: string,
-  data: CreateOrderBody
+  data: CreateOrderBody,
+  currentPrices?: Prices
 ): Promise<OrderResponse> => {
   validateCreateOrder(data);
 
-  const order = new Order({ ...data, userId });
+  // Determine the price for balance check
+  let priceToCheck = 0;
+  if (data.type === "market" && currentPrices) {
+    priceToCheck = parseFloat(currentPrices[data.asset]);
+  } else if (data.type === "limit" && data.limitPrice) {
+    priceToCheck = data.limitPrice;
+  }
+
+  // Check if user has sufficient balance
+  const balanceCheck = await checkSufficientBalance(
+    userId,
+    data.asset,
+    data.side,
+    data.amount,
+    priceToCheck
+  );
+
+  if (!balanceCheck.sufficient) {
+    const currencyNeeded = data.side === "sell" ? data.asset : "USD";
+    throw new Error(
+      `Insufficient ${currencyNeeded} balance. Available: ${balanceCheck.available.toFixed(
+        8
+      )}, Required: ${balanceCheck.required.toFixed(8)}`
+    );
+  }
+
+  const order = new Order({
+    ...data,
+    userId,
+    originalAmount: data.amount,
+    filledAmount: 0,
+  });
   const saved = await order.save();
-  return toResponse(saved);
+
+  // Execute order matching based on type
+  if (data.type === "market") {
+    await executeMarketOrder(saved);
+  } else if (data.type === "limit" && currentPrices) {
+    const currentPrice = parseFloat(currentPrices[data.asset]);
+    await matchLimitOrder(saved, currentPrice);
+  }
+
+  // Reload order to get updated status
+  const updated = await Order.findById(saved._id);
+  return toResponse(updated || saved);
 };
 
 export const update = async (
