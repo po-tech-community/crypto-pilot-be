@@ -10,6 +10,7 @@ import Order, {
 const toResponse = (doc: IOrder): OrderResponse => ({
   id: doc._id.toString(),
   userId: doc.userId,
+  asset: doc.asset,
   type: doc.type,
   side: doc.side,
   amount: doc.amount,
@@ -27,8 +28,48 @@ export const getById = async (id: string): Promise<OrderResponse | null> => {
   return order ? toResponse(order) : null;
 };
 
-export const create = async (data: CreateOrderBody): Promise<OrderResponse> => {
-  const order = new Order(data);
+const ALLOWED_ASSETS = ["BTC", "ETH", "SOL", "XRP"] as const;
+
+function validateCreateOrder(data: CreateOrderBody) {
+  // asset
+  if (!ALLOWED_ASSETS.includes(data.asset)) {
+    throw new Error("Invalid asset");
+  }
+
+  // amount
+  if (typeof data.amount !== "number" || Number.isNaN(data.amount) || data.amount <= 0) {
+    throw new Error("Amount must be a number > 0");
+  }
+
+  // type
+  if (data.type !== "market" && data.type !== "limit") {
+    throw new Error("Invalid order type");
+  }
+
+  // side
+  if (data.side !== "buy" && data.side !== "sell") {
+    throw new Error("Invalid order side");
+  }
+
+  // limitPrice rules
+  if (data.type === "limit") {
+    if (typeof data.limitPrice !== "number" || Number.isNaN(data.limitPrice) || data.limitPrice <= 0) {
+      throw new Error("limitPrice is required for limit orders and must be > 0");
+    }
+
+  } else {
+    // market order -> ignore limitPrice
+    delete (data as any).limitPrice;
+  }
+}
+
+export const create = async (
+  userId: string,
+  data: CreateOrderBody
+): Promise<OrderResponse> => {
+  validateCreateOrder(data);
+
+  const order = new Order({ ...data, userId });
   const saved = await order.save();
   return toResponse(saved);
 };
