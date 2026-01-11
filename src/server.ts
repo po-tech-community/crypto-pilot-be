@@ -8,6 +8,7 @@ import { setupPriceSocket } from "./websocket/priceSocket";
 import { setupOrderSocket } from "./websocket/orderSocket";
 import orderRoutes from "./modules/order/order.routes";
 import authRoutes from "./modules/authentication/auth.routes";
+import chatRoutes from "./modules/chat/chat.routes";
 import cookieParser from "cookie-parser";
 import countryRoutes from "./modules/country/country.routes";
 import profileRoutes from "./modules/profile/profile.routes";
@@ -39,6 +40,8 @@ app.use("/api/orders", AuthMiddleware, orderRoutes);
 app.use("/api/deposit", AuthMiddleware, depositRouter);
 app.use("/api/asset", AuthMiddleware, assetRoutes);
 app.use("/api/withdraw", AuthMiddleware, withdrawRoute);
+app.use("/api/chat", AuthMiddleware, chatRoutes);
+
 // Health check
 app.get("/", (req: Request, res: Response) =>
   res.send("Express TypeScript API with MongoDB Atlas running")
