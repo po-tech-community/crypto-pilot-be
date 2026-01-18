@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    env_file:
+      - .env
+    restart: always
+
+  frontend:
+    build:
+      context: ../crypto-pilot-fe
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    env_file:
+      - ../crypto-pilot-fe/.env
+    depends_on:
+      - backend
+    restart: always
