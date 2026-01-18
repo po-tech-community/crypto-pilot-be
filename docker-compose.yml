@@ -14,7 +14,7 @@ services:
       context: ../crypto-pilot-fe
       dockerfile: Dockerfile
     ports:
-      - "3002:3000"
+      - "3003:3000"
     env_file:
       - ../crypto-pilot-fe/.env
     depends_on:
